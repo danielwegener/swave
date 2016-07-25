@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.util.control.NonFatal
 import scala.annotation.tailrec
 import com.typesafe.scalalogging.Logger
-import org.jctools.queues.MpscLinkedQueue8
+import swave.core.internal.MPSCQueueProvider
 import swave.core.Dispatcher
 
 /**
@@ -26,7 +26,7 @@ private[impl] abstract class StreamActor(
    */
   private[this] val mailbox = {
     // TODO: upgrade to intrusive variant as soon as https://github.com/JCTools/JCTools/issues/102 is cleared
-    new MpscLinkedQueue8[MessageType]()
+    MPSCQueueProvider.apply[MessageType]
   }
 
   /*

@@ -6,7 +6,7 @@ package swave.core.impl
 
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicReference
-import org.jctools.queues.MpscLinkedQueue8
+
 import org.slf4j.LoggerFactory
 import com.typesafe.scalalogging.Logger
 import scala.annotation.tailrec
@@ -14,6 +14,7 @@ import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import scala.concurrent.{ Promise, Future, ExecutionContext }
 import swave.core.internal.agrona.TimerWheel
+import swave.core.internal.MPSCQueueProvider
 import swave.core.macros._
 import swave.core._
 
@@ -27,8 +28,8 @@ private[core] final class SchedulerImpl private (val settings: Scheduler.Setting
 
   private[this] val wheel = new TimerWheel(settings.tickDuration.toNanos, settings.ticksPerWheel)
   private[this] val cancelledTimer = new wheel.Timer()
-  private[this] val newTasks = new MpscLinkedQueue8[Task]
-  private[this] val cancellations = new MpscLinkedQueue8[wheel.Timer]
+  private[this] val newTasks: MPSCQueue[Task] = MPSCQueueProvider.apply[Task]
+  private[this] val cancellations = MPSCQueueProvider.apply[wheel.Timer]
   private[this] val state = new AtomicReference[State](UnstartedState)
 
   def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, r: Runnable)(implicit ec: ExecutionContext): Cancellable = {
