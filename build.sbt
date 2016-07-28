@@ -101,7 +101,7 @@ lazy val commonScalacOptions = Seq(
   "-language:implicitConversions",
   "-language:experimental.macros",
   "-unchecked",
-  "-Xfatal-warnings",
+  //"-Xfatal-warnings",
   "-Xlint",
   "-Yinline-warnings",
   "-Yno-adapted-args",
@@ -120,7 +120,7 @@ lazy val macroParadise =
 val `reactive-streams`     = "org.reactivestreams"        %   "reactive-streams"     % "1.0.0"
 val `jctools-core`         = "org.jctools"                %   "jctools-core"         % "1.2.1"
 val `typesafe-config`      = "com.typesafe"               %   "config"               % "1.3.0"
-val `shocon`               = "eu.unicredit"               %%%!"shocon"               % "0.0.2-SNAPSHOT"
+val `shocon`               = "eu.unicredit"               %%%!"shocon"               % "0.0.2-dwe"
 val shapeless              = "com.chuusai"                %%%!"shapeless"            % "2.3.1"
 val `scala-logging`        = "com.typesafe.scala-logging" %%  "scala-logging"        % "3.4.0"
 
@@ -130,8 +130,10 @@ val `akkajs-stream`        = "eu.unicredit"               %%%!"akkajsactorstream
 val `scodec-bits`          = "org.scodec"                 %%%!"scodec-bits"          % "1.1.0"
 
 // test
-val scalatest              = "org.scalatest"              %%%! "scalatest"           % "3.0.0-RC4" % "test"
-val scalacheck             = "org.scalacheck"             %%%! "scalacheck"          % "1.12.5"
+val scalatestJS              = "org.scalatest"              %%%! "scalatest"           % "3.0.0-RC4" % "test"
+val scalatest              = "org.scalatest"              %% "scalatest"           % "3.0.0-RC4" % "test"
+val scalacheckJS             = "org.scalacheck"             %%%! "scalacheck"          % "1.13.1"
+val scalacheck             = "org.scalacheck"             %% "scalacheck"          % "1.13.1"
 val `reactive-streams-tck` = "org.reactivestreams"        %    "reactive-streams-tck"% "1.0.0" % "test"
 
 // examples
@@ -153,12 +155,11 @@ lazy val akkaCompat = crossProject.crossType(CrossType.Pure)
   .settings(releaseSettings: _*)
   .settings(publishingSettings: _*)
   .settings(
-    moduleName := "swave-akka-compat",
-    libraryDependencies += scalatest)
+    moduleName := "swave-akka-compat")
   .jvmSettings(
-    libraryDependencies += `akka-stream`)
+    libraryDependencies ++= Seq(`akka-stream`, scalatest))
   .jsSettings(
-    libraryDependencies += `akkajs-stream`)
+    libraryDependencies ++= Seq(`akkajs-stream`, scalatestJS))
 
 lazy val akkaCompatJVM = akkaCompat.jvm
 lazy val akkaCompatJS = akkaCompat.js
@@ -179,12 +180,12 @@ lazy val core = crossProject.crossType(CrossType.Pure)
   .settings(
     moduleName := "swave-core",
     macroParadise,
-    libraryDependencies ++= Seq(shapeless, `scala-logging`,
-      scalatest, scalacheck % "test"))
+    libraryDependencies ++= Seq(shapeless, `scala-logging`
+      ))
     .jvmSettings(
-      libraryDependencies ++= Seq(`typesafe-config`, `reactive-streams`,  `jctools-core`))
+      libraryDependencies ++= Seq(`typesafe-config`, `reactive-streams`,  `jctools-core`, scalatest, scalacheck % "test"))
     .jsSettings(
-      libraryDependencies ++= Seq(shocon)
+      libraryDependencies ++= Seq(shocon, scalatestJS, scalacheckJS % "test")
     )
 
 
@@ -207,7 +208,9 @@ lazy val `core-tests` = crossProject.crossType(CrossType.Pure)
   .enablePlugins(AutomateHeaderPlugin)
   .settings(commonSettings: _*)
   .settings(noPublishingSettings: _*)
-  .settings(libraryDependencies ++= Seq(shapeless, scalatest, `reactive-streams-tck`, scalacheck % "test", logback % "test"))
+  .settings(libraryDependencies ++= Seq(shapeless, `reactive-streams-tck`, logback % "test"))
+  .jsSettings(libraryDependencies ++= Seq(scalatestJS, scalacheckJS % "test"))
+  .jvmSettings(libraryDependencies ++= Seq(scalatest, scalacheck % "test"))
 
 lazy val `core-testsJS` = `core-tests`.js
 lazy val `core-testsJVM` = `core-tests`.jvm
@@ -233,6 +236,8 @@ lazy val scodecCompat = crossProject.crossType(CrossType.Pure)
   .settings(
     moduleName := "swave-scodec-compat",
     libraryDependencies ++= Seq(`scodec-bits`, scalatest, logback % "test"))
+  .jsSettings(libraryDependencies += scalatestJS)
+  .jvmSettings(libraryDependencies += scalatest)
 lazy val scodecCompatJS = scodecCompat.js
 lazy val scodecCompatJVM = scodecCompat.jvm
 
@@ -245,8 +250,9 @@ lazy val testkit = crossProject.crossType(CrossType.Pure)
   .settings(publishingSettings: _*)
   .settings(
     moduleName := "swave-testkit",
-    macroParadise,
-    libraryDependencies ++= Seq(scalacheck))
+    macroParadise)
+  .jsSettings(libraryDependencies ++= Seq(scalacheckJS % "test"))
+  .jvmSettings(libraryDependencies ++= Seq(scalacheck % "test"))
 
 lazy val testkitJS = testkit.js
 lazy val testkitJVM = testkit.jvm
